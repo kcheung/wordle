@@ -1,58 +1,31 @@
-use wordle::words;
-
-const TOTAL_GUESS: i32 = 6;
+use std::io;
+use ansi_term::Colour;
+use wordle::{words, Game};
 
 fn main() {
-    println!("Wordle");
+  println!("------ Wordle ------");
 
-    let mut guesses = 0;
+  let match_word = words::random_word();
 
-    let correct_word = words::todays_word();
-    println!("{correct_word}");
+  let mut game = Game::new(match_word);
 
+  loop {
+    let mut guess = String::new();
 
-    // loop {
-    //     println!("Please input your guess.");
+    io::stdin()
+      .read_line(&mut guess)
+      .expect("Failed to read line");
 
-    //     if guesses == TOTAL_GUESS {
-    //         println!("You are out of guess. The correct word was \"{correct_word}\"");
-    //         break;
-    //     }
+    let guess: String =  match guess.trim().to_lowercase().parse() {
+      Ok(guess) => guess,
+      Err(_) => continue,
+    };
 
-    //     let mut guess = String::new();
+    let results = game.guess(guess).unwrap();
 
-    //     io::stdin()
-    //         .read_line(&mut guess)
-    //         .expect("Failed to read line");
-
-    //     let guess: String =  match guess.trim().to_lowercase().parse() {
-    //         Ok(num) => num,
-    //         Err(_) => continue,
-    //     };
-
-    //     println!("You guess: {guess}");
-
-    //     if guess.len() != 5 {
-    //         println!("Enter a 5-letter guess.")
-    //     } else {
-    //         guesses += 1;
-
-    //         if guess == correct_word {
-    //             println!("You win!");
-    //             break;
-    //         }
-
-    //         let mut results = String::from("");
-    //         for index in 0..5 {
-    //             if guess.chars().nth(index).unwrap() == correct_word.chars().nth(index).unwrap() {
-    //                 results.push(guess.chars().nth(index).unwrap());
-    //             } else if correct_word.contains(guess.chars().nth(index).unwrap()) {
-    //                 results.push('#');
-    //             } else {
-    //                 results.push('_');
-    //             }
-    //         }
-    //         println!("{results}");
-    //     }
-    // }
+    println!("> {}", results.0);
+    if results.1 {
+      break;
+    }
+  }
 }
