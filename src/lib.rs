@@ -72,3 +72,41 @@ impl Game {
     return Ok((response, end_game));
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use crate::words;
+  use super::*;
+
+  #[test]
+  fn test_random_word() {
+    assert_eq!(words::random_word().len(), 5)
+  }
+
+  #[test]
+  fn test_new() {
+    let word = "atest";
+    let game = Game::new(word.to_string());
+    assert_eq!(game.guesses, 0);
+    assert_eq!(game.match_word, word);
+    assert_eq!(game.alphabet.len(), 26);
+  }
+
+  #[test]
+  fn test_guess() {
+    let guessed_word_1 = String::from("stark");
+    let guessed_word_2 = String::from("trash");
+    let match_word = String::from("feast");
+    let mut game = Game::new(match_word.clone());
+
+    let results = game.guess(guessed_word_1).unwrap();
+    assert_eq!(results.0, "##a__");
+    assert_eq!(results.1, false);
+    let results = game.guess(guessed_word_2).unwrap();
+    assert_eq!(results.0, "#_as_");
+    assert_eq!(results.1, false);
+    let results = game.guess(match_word).unwrap();
+    assert_eq!(results.0, "You won!");
+    assert_eq!(results.1, true);
+  }
+}
