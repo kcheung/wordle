@@ -1,9 +1,8 @@
 use std::io;
-use ansi_term::Colour;
 use wordle::{words, Game};
 
 fn main() {
-  println!("------ Wordle ------");
+  println!("{}", "------ Wordle ------");
 
   let match_word = words::random_word();
 
