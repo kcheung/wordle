@@ -1,6 +1,12 @@
-use std::{io::{stdout, Write}};
+use std::{io::{stdout, Write, self}};
 
-use crossterm::{style::{Print, SetForegroundColor, Color, ResetColor}, queue};
+use crossterm::{
+  style::{Color, self},
+  queue,
+  execute,
+  terminal,
+  cursor, event::{Event, KeyEvent, self, KeyCode, KeyEventKind},
+};
 
 pub mod words {
   use std::fs;
@@ -43,7 +49,58 @@ impl Game {
     }
   }
 
-  pub fn guess(&mut self, word: &String) -> Result<bool, std::io::Error> {
+  pub fn run<W>(mut self, w: &mut W) -> io::Result<()>
+  where
+    W: io::Write,
+  {
+    execute!(w, terminal::EnterAlternateScreen)?;
+    terminal::enable_raw_mode()?;
+
+    loop {
+      let guess_string = self.read_line();
+      if self.guess(&guess_string.unwrap())? {
+        break;
+      }
+      execute!(w, cursor::MoveToNextLine(1))?;
+    }
+
+    loop {
+      if let Ok(Event::Key(KeyEvent {
+        code: KeyCode::Char(c),
+        kind: KeyEventKind::Press,
+        modifiers: _,
+        state: _,
+      })) = event::read()
+      {
+        execute!(
+          w,
+          style::ResetColor,
+          cursor::Show,
+          terminal::LeaveAlternateScreen
+        )?;
+        return terminal::disable_raw_mode();
+      }
+    }
+  }
+
+  fn read_line(&self) -> io::Result<String> {
+    let mut line = String::new();
+    while let Event::Key(KeyEvent { code, .. }) = event::read()? {
+      match code {
+        KeyCode::Enter => {
+          break;
+        }
+        KeyCode::Char(c) => {
+          line.push(c);
+        }
+        _ => {}
+      }
+    }
+
+    Ok(line)
+  }
+
+  pub fn guess(&mut self, word: &String) -> io::Result<bool> {
     let mut end_game: bool = false;
     let mut s: std::io::Stdout = stdout();
     let color: Color = Color::Blue;
@@ -59,7 +116,13 @@ impl Game {
       response = String::from("You won!\n");
     } else {
       self.guesses += 1;
-      response = String::from("\n");
+
+      if self.guesses == Self::TOTAL_GUESS {
+        end_game = true;
+        response = String::from(format!("\nYou are out of guesses. The word was {}\n", self.match_word));
+      } else {
+        response = String::from("\n");
+      }
 
       for index in 0..5 {
         let guess_char: char = word.chars().nth(index).unwrap();
@@ -78,28 +141,29 @@ impl Game {
 
         queue!(
           s,
-          SetForegroundColor(char_color),
-          Print(guess_char.to_string()),
+          style::SetForegroundColor(char_color),
+          style::Print(guess_char.to_string()),
         )?;
       }
 
       queue!(
         s,
-        ResetColor,
+        style::ResetColor,
       )?;
     }
 
     queue!(
       s,
-      SetForegroundColor(color),
-      Print(response),
-      ResetColor,
+      style::SetForegroundColor(color),
+      style::Print(response),
+      style::ResetColor,
     )?;
 
     s.flush()?;
 
     Ok(end_game)
   }
+
 }
 
 #[cfg(test)]
@@ -145,8 +209,6 @@ mod tests {
     let match_word = String::from("feast");
     let mut game = Game::new(match_word.clone());
 
-    let results = game.guess(&guessed_word_1).unwrap();
-    assert_eq!(results, false);
     let results = game.guess(&guessed_word_1).unwrap();
     assert_eq!(results, false);
     let results = game.guess(&guessed_word_1).unwrap();
