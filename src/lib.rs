@@ -72,7 +72,7 @@ impl Game {
     // TODO: Move into method
     loop {
       if let Ok(Event::Key(KeyEvent {
-        code: KeyCode::Char(c),
+        code: KeyCode::Char(_c),
         kind: KeyEventKind::Press,
         modifiers: _,
         state: _,
@@ -198,7 +198,9 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
-  use crate::words;
+  use crossterm::ExecutableCommand;
+
+use crate::words;
   use super::*;
 
   #[test]
@@ -252,4 +254,24 @@ mod tests {
     let results = game.guess(&guessed_word_1).unwrap();
     assert_eq!(results, true);
   }
+
+  // TODO: Test run method, how to test with crossterm alternative screen appearing
+  // #[test]
+
+  // fn test_run() -> io::Result<()> {
+  //   let guessed_word_1 = String::from("stark");
+  //   let match_word = String::from("feast");
+  //   let game: Game = Game::new(match_word);
+
+  //   let mut s = io::stdout();
+  //   game.run(&mut s);
+  //   s
+  //     .execute(style::Print(guessed_word_1.clone()))?
+  //     .execute(style::Print(guessed_word_1.clone()))?
+  //     .execute(style::Print(guessed_word_1.clone()))?
+  //     .execute(style::Print(guessed_word_1.clone()))?
+  //     .execute(style::Print(guessed_word_1.clone()))?;
+
+  //   Ok(())
+  // }
 }
