@@ -64,6 +64,8 @@ impl Game {
       execute!(w, cursor::MoveToNextLine(1))?;
     }
 
+    // Close game after any key press.
+    // TODO: Move into method
     loop {
       if let Ok(Event::Key(KeyEvent {
         code: KeyCode::Char(c),
@@ -83,6 +85,7 @@ impl Game {
     }
   }
 
+  // Build guess by adding each key press into a single entry once "Enter" is pressed
   fn read_line(&self) -> io::Result<String> {
     let mut line = String::new();
     while let Event::Key(KeyEvent { code, .. }) = event::read()? {
@@ -100,6 +103,9 @@ impl Game {
     Ok(line)
   }
 
+  // Given a guess string, check if the guess is a match or has any correct chars.
+  // This `queue`s Commands to be executed once the io:Write object is flushed.
+  // TODO: Clean up
   pub fn guess(&mut self, word: &String) -> io::Result<bool> {
     let mut end_game: bool = false;
     let mut s: std::io::Stdout = stdout();
