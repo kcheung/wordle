@@ -53,11 +53,15 @@ impl Game {
   where
     W: io::Write,
   {
-    execute!(w, terminal::EnterAlternateScreen)?;
+    execute!(
+      w,
+      terminal::EnterAlternateScreen,
+      cursor::SetCursorStyle::BlinkingUnderScore,
+    )?;
     terminal::enable_raw_mode()?;
 
     loop {
-      let guess_string = self.read_line();
+      let guess_string = self.read_line(w);
       if self.guess(&guess_string.unwrap())? {
         break;
       }
@@ -86,15 +90,35 @@ impl Game {
   }
 
   // Build guess by adding each key press into a single entry once "Enter" is pressed
-  fn read_line(&self) -> io::Result<String> {
+  fn read_line<W>(&self, w: &mut W) -> io::Result<String>
+  where
+    W: io::Write,
+  {
     let mut line = String::new();
     while let Event::Key(KeyEvent { code, .. }) = event::read()? {
       match code {
         KeyCode::Enter => {
+          execute!(
+            w,
+            cursor::MoveLeft(5)
+          )?;
           break;
+        }
+        KeyCode::Backspace => {
+          line.pop();
+          execute!(
+            w,
+            cursor::MoveLeft(1),
+            style::Print(' '),
+            cursor::MoveLeft(1),
+          )?;
         }
         KeyCode::Char(c) => {
           line.push(c);
+          execute!(
+            w,
+            style::Print(c)
+          )?;
         }
         _ => {}
       }
@@ -163,6 +187,7 @@ impl Game {
       style::SetForegroundColor(color),
       style::Print(response),
       style::ResetColor,
+      cursor::MoveToNextLine(1),
     )?;
 
     s.flush()?;
