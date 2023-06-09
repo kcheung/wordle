@@ -134,25 +134,18 @@ impl Game {
     let mut end_game: bool = false;
     let mut s: std::io::Stdout = stdout();
     let color: Color = Color::Blue;
-    let response: String;
+    let mut response: String = String::from("");
 
     if self.guesses == Self::TOTAL_GUESS {
       end_game = true;
-      response = String::from(format!("You are out of guesses. The word was {}\n", self.match_word));
+      response = String::from(format!("You are out of guesses. The word was {}", self.match_word));
     } else if word.len() != 5 {
-      response = String::from("Enter a 5-letter guess.\n");
+      response = String::from("Enter a 5-letter guess.");
     } else if *word == self.match_word {
       end_game = true;
-      response = String::from("You won!\n");
+      response = String::from("You won!");
     } else {
       self.guesses += 1;
-
-      if self.guesses == Self::TOTAL_GUESS {
-        end_game = true;
-        response = String::from(format!("\nYou are out of guesses. The word was {}\n", self.match_word));
-      } else {
-        response = String::from("\n");
-      }
 
       for index in 0..5 {
         let guess_char: char = word.chars().nth(index).unwrap();
@@ -182,12 +175,18 @@ impl Game {
       )?;
     }
 
+    if self.guesses == Self::TOTAL_GUESS {
+      end_game = true;
+      response = String::from(format!("You are out of guesses. The word was {}", self.match_word));
+
+      execute!(s, cursor::MoveToNextLine(1))?;
+    }
+
     queue!(
       s,
       style::SetForegroundColor(color),
       style::Print(response),
       style::ResetColor,
-      cursor::MoveToNextLine(1),
     )?;
 
     s.flush()?;
