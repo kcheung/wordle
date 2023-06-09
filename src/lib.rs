@@ -1,3 +1,7 @@
+use std::{io::{stdout, Write}};
+
+use crossterm::{style::{Print, SetForegroundColor, Color, ResetColor}, queue};
+
 pub mod words {
   use std::fs;
   use rand::Rng;
@@ -39,37 +43,62 @@ impl Game {
     }
   }
 
-  pub fn guess(&mut self, word: String) -> Result<(String, bool), GameError> {
-    let mut response: String = String::from("");
+  pub fn guess(&mut self, word: &String) -> Result<bool, std::io::Error> {
     let mut end_game: bool = false;
+    let mut s: std::io::Stdout = stdout();
+    let color: Color = Color::Blue;
+    let response: String;
 
     if self.guesses == Self::TOTAL_GUESS {
-      response = String::from("You are out of guesses. The word was ") + &self.match_word;
       end_game = true;
+      response = String::from(format!("You are out of guesses. The word was {}\n", self.match_word));
     } else if word.len() != 5 {
-      response = String::from("Enter a 5-letter guess.");
-    } else if word == self.match_word {
-      response = String::from("You won!");
+      response = String::from("Enter a 5-letter guess.\n");
+    } else if *word == self.match_word {
       end_game = true;
+      response = String::from("You won!\n");
     } else {
       self.guesses += 1;
+      response = String::from("\n");
 
       for index in 0..5 {
-        let guess_char = word.chars().nth(index).unwrap();
-        // Guessed char in correct position
+        let guess_char: char = word.chars().nth(index).unwrap();
+        let char_color: Color;
+
         if guess_char == self.match_word.chars().nth(index).unwrap() {
-          response.push(guess_char);
-        // Guessed char is correct but in wrong position
+          // Guessed char in correct position
+          char_color = Color::Green;
         } else if self.match_word.contains(guess_char) {
-          response.push('#');
-        // Guessed char not in correct word
+          // Guessed char is correct but in wrong position
+          char_color = Color::Yellow;
         } else {
-          response.push('_');
+          // Guessed char not in correct word
+          char_color = Color::Red;
         }
+
+        queue!(
+          s,
+          SetForegroundColor(char_color),
+          Print(guess_char.to_string()),
+        )?;
       }
 
+      queue!(
+        s,
+        ResetColor,
+      )?;
     }
-    return Ok((response, end_game));
+
+    queue!(
+      s,
+      SetForegroundColor(color),
+      Print(response),
+      ResetColor,
+    )?;
+
+    s.flush()?;
+
+    Ok(end_game)
   }
 }
 
@@ -92,21 +121,43 @@ mod tests {
     assert_eq!(game.alphabet.len(), 26);
   }
 
+  // Correctly guess in 3 turns
   #[test]
-  fn test_guess() {
+  fn test_guess_win_case() {
     let guessed_word_1 = String::from("stark");
     let guessed_word_2 = String::from("trash");
     let match_word = String::from("feast");
     let mut game = Game::new(match_word.clone());
 
-    let results = game.guess(guessed_word_1).unwrap();
-    assert_eq!(results.0, "##a__");
-    assert_eq!(results.1, false);
-    let results = game.guess(guessed_word_2).unwrap();
-    assert_eq!(results.0, "#_as_");
-    assert_eq!(results.1, false);
-    let results = game.guess(match_word).unwrap();
-    assert_eq!(results.0, "You won!");
-    assert_eq!(results.1, true);
+    let results = game.guess(&guessed_word_1).unwrap();
+    assert_eq!(results, false);
+    let results = game.guess(&guessed_word_2).unwrap();
+    assert_eq!(results, false);
+    let results = game.guess(&match_word).unwrap();
+    assert_eq!(results, true);
+  }
+
+  // Wrongly guess 7 times
+  #[test]
+
+  fn test_guess_out_of_guesses_case() {
+    let guessed_word_1 = String::from("stark");
+    let match_word = String::from("feast");
+    let mut game = Game::new(match_word.clone());
+
+    let results = game.guess(&guessed_word_1).unwrap();
+    assert_eq!(results, false);
+    let results = game.guess(&guessed_word_1).unwrap();
+    assert_eq!(results, false);
+    let results = game.guess(&guessed_word_1).unwrap();
+    assert_eq!(results, false);
+    let results = game.guess(&guessed_word_1).unwrap();
+    assert_eq!(results, false);
+    let results = game.guess(&guessed_word_1).unwrap();
+    assert_eq!(results, false);
+    let results = game.guess(&guessed_word_1).unwrap();
+    assert_eq!(results, false);
+    let results = game.guess(&guessed_word_1).unwrap();
+    assert_eq!(results, true);
   }
 }

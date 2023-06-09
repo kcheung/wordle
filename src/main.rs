@@ -1,15 +1,15 @@
 use std::io;
 use wordle::{words, Game};
 
-fn main() {
+fn main() -> std::io::Result<()> {
   println!("{}", "------ Wordle ------");
 
-  let match_word = words::random_word();
+  let match_word: String = words::random_word();
 
-  let mut game = Game::new(match_word);
+  let mut game: Game = Game::new(match_word);
 
   loop {
-    let mut guess = String::new();
+    let mut guess: String = String::new();
 
     io::stdin()
       .read_line(&mut guess)
@@ -20,11 +20,12 @@ fn main() {
       Err(_) => continue,
     };
 
-    let results = game.guess(guess).unwrap();
+    let results: bool = game.guess(&guess).unwrap();
 
-    println!("> {}", results.0);
-    if results.1 {
+    if results {
       break;
     }
-  }
+  };
+
+  Ok(())
 }
